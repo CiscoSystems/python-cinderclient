@@ -1,5 +1,8 @@
 .coverage
 .venv
+.tox
+.testrepository
+subunit.log
 *,cover
 cover
 *.pyc
@@ -7,7 +10,8 @@ cover
 *.swp
 *~
 AUTHORS
+ChangeLog
 build
 dist
-.*egg-info
 cinderclient/versioninfo
+python_cinderclient.egg-info
