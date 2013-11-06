@@ -117,6 +117,23 @@ class ShellTest(utils.TestCase):
         self.run_command('delete 1234')
         self.assert_called('DELETE', '/volumes/1234')
 
+    def test_delete_by_name(self):
+        self.run_command('delete sample-volume')
+        self.assert_called_anytime('GET', '/volumes/detail?all_tenants=1')
+        self.assert_called('DELETE', '/volumes/1234')
+
+    def test_delete_multiple(self):
+        self.run_command('delete 1234 5678')
+        self.assert_called('DELETE', '/volumes/5678')
+
+    def test_backup(self):
+        self.run_command('backup-create 1234')
+        self.assert_called('POST', '/backups')
+
+    def test_restore(self):
+        self.run_command('backup-restore 1234')
+        self.assert_called('POST', '/backups/1234/restore')
+
     def test_snapshot_list_filter_volume_id(self):
         self.run_command('snapshot-list --volume-id=1234')
         self.assert_called('GET', '/snapshots/detail?volume_id=1234')
@@ -265,4 +282,39 @@ class ShellTest(utils.TestCase):
         self.run_command('migrate 1234 fakehost --force-host-copy=True')
         expected = {'os-migrate_volume': {'force_host_copy': 'True',
                                           'host': 'fakehost'}}
+        self.assert_called('POST', '/volumes/1234/action', body=expected)
+
+    def test_snapshot_metadata_set(self):
+        self.run_command('snapshot-metadata 1234 set key1=val1 key2=val2')
+        self.assert_called('POST', '/snapshots/1234/metadata',
+                           {'metadata': {'key1': 'val1', 'key2': 'val2'}})
+
+    def test_snapshot_metadata_unset_dict(self):
+        self.run_command('snapshot-metadata 1234 unset key1=val1 key2=val2')
+        self.assert_called_anytime('DELETE', '/snapshots/1234/metadata/key1')
+        self.assert_called_anytime('DELETE', '/snapshots/1234/metadata/key2')
+
+    def test_snapshot_metadata_unset_keys(self):
+        self.run_command('snapshot-metadata 1234 unset key1 key2')
+        self.assert_called_anytime('DELETE', '/snapshots/1234/metadata/key1')
+        self.assert_called_anytime('DELETE', '/snapshots/1234/metadata/key2')
+
+    def test_volume_metadata_update_all(self):
+        self.run_command('metadata-update-all 1234 key1=val1 key2=val2')
+        self.assert_called('PUT', '/volumes/1234/metadata',
+                           {'metadata': {'key1': 'val1', 'key2': 'val2'}})
+
+    def test_snapshot_metadata_update_all(self):
+        self.run_command('snapshot-metadata-update-all\
+                         1234 key1=val1 key2=val2')
+        self.assert_called('PUT', '/snapshots/1234/metadata',
+                           {'metadata': {'key1': 'val1', 'key2': 'val2'}})
+
+    def test_readonly_mode_update(self):
+        self.run_command('readonly-mode-update 1234 True')
+        expected = {'os-update_readonly_flag': {'readonly': True}}
+        self.assert_called('POST', '/volumes/1234/action', body=expected)
+
+        self.run_command('readonly-mode-update 1234 False')
+        expected = {'os-update_readonly_flag': {'readonly': False}}
         self.assert_called('POST', '/volumes/1234/action', body=expected)
